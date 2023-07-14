@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"unsafe"
 
 	nmea "github.com/adrianmo/go-nmea"
+	"github.com/tarm/serial"
 )
 
 func sender(conn net.Conn, data chan nmea.Sentence) {
@@ -47,8 +49,8 @@ func sender(conn net.Conn, data chan nmea.Sentence) {
 		switch recv.DataType() {
 		case nmea.TypeXDR:
 			xdr := recv.(nmea.XDR)
-			// log.Println(xdr)
-			// log.Println("THIS XDR")
+			log.Println(xdr)
+			log.Println("THIS XDR")
 			pos.Roll = float32(xdr.Measurements[0].Value)
 			pos.Pitch = float32(xdr.Measurements[1].Value)
 		case nmea.TypeGLL:
@@ -77,12 +79,13 @@ func main() {
 	fmt.Println("Send IP : ", *sendIP)
 	fmt.Println("Send Port : ", *sendPort)
 
-	// c := &serial.Config{Name: *comPort, Baud: *baudRate}
-	// s, err := serial.OpenPort(c)
-	// read := bufio.NewScanner(s)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	c := &serial.Config{Name: *comPort, Baud: *baudRate}
+	s, err := serial.OpenPort(c)
+	read := bufio.NewScanner(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer s.Close()
 
 	server, err := net.Dial("udp", fmt.Sprintf("%s:%d", *sendIP, *sendPort))
 	if err != nil {
@@ -91,33 +94,15 @@ func main() {
 	reqChan := make(chan nmea.Sentence)
 	go sender(server, reqChan)
 
-	// defer s.Close()
-
 	for {
-		xdr, err := nmea.Parse("$IIXDR,A,0.7,D,ROLL,A,-1.9,D,PITCH*37")
-		if err != nil {
-			// log.Println(err)
-		} else {
-			// log.Println(nm)
-			reqChan <- xdr
+		if read.Scan() {
+			text := read.Text()
+			nm, err := nmea.Parse(text)
+			if err != nil {
+				log.Println(err)
+			} else {
+				reqChan <- nm
+			}
 		}
-		gpgll, err := nmea.Parse("$GPGLL,3506.2155,N,12904.9829,E,144347.00,A*02")
-		if err != nil {
-			// log.Println(err)
-		} else {
-			// log.Println(nm)
-			reqChan <- gpgll
-		}
-		rot, err := nmea.Parse("$--ROT,-12.6,A*3E")
-		if err != nil {
-			log.Println(err)
-		} else {
-			reqChan <- rot
-		}
-		// if read.Scan() {
-		// 	text := read.Text()
-		// 	nm, err := nmea.Parse(text)
-
-		// }
 	}
 }
