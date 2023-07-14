@@ -1,5 +1,6 @@
 # nmea-sender
 
+```
 [CONFIG]
 TITLE=NMEA Sender
 [GPS CONFIG]
@@ -20,3 +21,4 @@ FILE SIZE=1048576
 SAVE DAYS=30
 [ARPATarget SOCKET]
 RECEIVE PORT NO=51112
+```
