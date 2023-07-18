@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"net"
+	"strings"
 	"sync"
 	"time"
 	"unsafe"
@@ -97,6 +98,7 @@ func main() {
 	for {
 		if read.Scan() {
 			text := read.Text()
+			text = strings.ReplaceAll(text, " ", "")
 			nm, err := nmea.Parse(text)
 			if err != nil {
 				log.Println(err)
