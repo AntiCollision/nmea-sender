@@ -99,6 +99,8 @@ func main() {
 		if read.Scan() {
 			text := read.Text()
 			text = strings.ReplaceAll(text, " ", "")
+			text = strings.TrimSpace(text)
+
 			nm, err := nmea.Parse(text)
 			if err != nil {
 				log.Println(err)
