@@ -48,10 +48,10 @@ func sender(conn net.Conn, data chan nmea.Sentence) {
 
 		mu.Lock()
 		switch recv.DataType() {
+			log.Println(rot)
+
 		case nmea.TypeXDR:
 			xdr := recv.(nmea.XDR)
-			log.Println(xdr)
-			log.Println("THIS XDR")
 			pos.Roll = float32(xdr.Measurements[0].Value)
 			pos.Pitch = float32(xdr.Measurements[1].Value)
 		case nmea.TypeGLL:
@@ -61,7 +61,6 @@ func sender(conn net.Conn, data chan nmea.Sentence) {
 			pos.Y = float32(gll.Longitude)
 		case nmea.TypeROT:
 			rot := recv.(nmea.ROT)
-			// log.Println(rot)
 			pos.Yaw = float32(rot.RateOfTurn / 180 * math.Pi)
 		}
 		mu.Unlock()
