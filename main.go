@@ -45,10 +45,9 @@ func sender(conn net.Conn, data chan nmea.Sentence) {
 
 	for {
 		recv := <-data
-
+		log.Println(recv)
 		mu.Lock()
 		switch recv.DataType() {
-			log.Println(rot)
 
 		case nmea.TypeXDR:
 			xdr := recv.(nmea.XDR)
@@ -67,11 +66,23 @@ func sender(conn net.Conn, data chan nmea.Sentence) {
 	}
 }
 
+func socketBypass(conn net.Conn, data chan []byte) {
+	for {
+		select {
+		case recv := <-data:
+			conn.Write(recv)
+		}
+	}
+}
+
 func main() {
 	comPort := flag.String("c", "", "COM 포트 정보를 입력해 주세요.")
 	baudRate := flag.Int("b", 115200, "Baudrate 정보를 입력해 주세요.")
 	sendIP := flag.String("i", "127.0.0.1", "전송할 IP 정보를 입력해 주세요.")
 	sendPort := flag.Int("p", 6000, "전송할 Port 정보를 입력해 주세요.")
+
+	sockSeb := flag.String("si", "127.0.0.1", "전송할 IP 정보를 입력해 주세요.")
+	sockPot := flag.Int("sp", 8000, "전송할 Port 정보를 입력해 주세요.")
 	flag.Parse()
 
 	fmt.Println("ComPort : ", *comPort)
@@ -91,14 +102,20 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	sock, err := net.Dial("udp", fmt.Sprintf("%s:%d", *sockSeb, *sockPot))
+	if err != nil {
+		log.Fatal(err)
+	}
 	reqChan := make(chan nmea.Sentence)
+	data := make(chan []byte)
 	go sender(server, reqChan)
-
+	go socketBypass(sock, data)
 	for {
 		if read.Scan() {
 			text := read.Text()
 			text = strings.ReplaceAll(text, " ", "")
 			text = strings.TrimSpace(text)
+			data <- []byte(text)
 
 			nm, err := nmea.Parse(text)
 			if err != nil {
