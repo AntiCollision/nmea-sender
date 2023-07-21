@@ -45,10 +45,8 @@ func sender(conn net.Conn, data chan nmea.Sentence) {
 
 	for {
 		recv := <-data
-		log.Println(recv)
 		mu.Lock()
 		switch recv.DataType() {
-
 		case nmea.TypeXDR:
 			xdr := recv.(nmea.XDR)
 			pos.Roll = float32(xdr.Measurements[0].Value)
@@ -89,6 +87,9 @@ func main() {
 	fmt.Println("Baudrate : ", *baudRate)
 	fmt.Println("Send IP : ", *sendIP)
 	fmt.Println("Send Port : ", *sendPort)
+
+	fmt.Println("Bypass IP : ", *sockSeb)
+	fmt.Println("Bypass Port : ", *sockPot)
 
 	c := &serial.Config{Name: *comPort, Baud: *baudRate}
 	s, err := serial.OpenPort(c)
